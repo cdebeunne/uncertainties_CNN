@@ -27,7 +27,7 @@ class ImageDataset(Dataset):
         x = img
 
         # Get class of the image (Groundtruth)
-        y = np.argmax(self.im_ind[index])
+        y = self.im_ind[index]
 
         # Transform image with torchvision functions (if train mod)
         toPil = transforms.ToPILImage()
