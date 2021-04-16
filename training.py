@@ -14,7 +14,7 @@ from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 import matplotlib.pyplot as plt
 
 
-def trainNet(net, trainLoader, evalLoader):
+def trainNet(net, trainLoader, evalLoader, ADF=False):
     """
     input : a network as nn.modulen, a train data loader and an evaluation dataloader
     train a given network and save the model as net.pt
@@ -48,45 +48,50 @@ def trainNet(net, trainLoader, evalLoader):
                 net.eval()
                 loader = evalLoader
 
-                for i, data in enumerate(loader):
-                    # Load image and class inside a batch
-                    imgs = data[0].to(device)
-                    labels = data[1].to(device)
+            for i, data in enumerate(loader):
+                # Load image and class inside a batch
+                imgs = data[0].to(device)
+                labels = data[1].to(device)
 
-                    # Set the gradient to zero
-                    optimizer.zero_grad()
+                # Set the gradient to zero
+                optimizer.zero_grad()
 
-                    # compute or not the gradient
-                    with torch.set_grad_enabled(phase == 'train'):
-                        # Apply the model & compute the loss
+                # compute or not the gradient
+                with torch.set_grad_enabled(phase == 'train'):
+                    # Apply the model & compute the loss
+                    if ADF:
+                        preds,_ = net(imgs)
+                        loss = criterion(preds, labels)
+                    else:
                         preds = net(imgs)
                         loss = criterion(preds, labels)
-                        _, i = torch.max(preds, 1)
 
-                        epoch_acc += torch.sum(i == labels)
-                        epoch_loss.append(loss.item())
+                    _, i = torch.max(preds, 1)
 
-                        if phase == 'train':
-                            # compute the gradient & update parameters
-                            loss.backward()
-                            optimizer.step()
+                    epoch_acc += torch.sum(i == labels)
+                    epoch_loss.append(loss.item())
 
-                # Display loss
-                mean_loss_epoch = np.mean(epoch_loss)
-                std_loss_epoch = np.std(epoch_loss)
+                    if phase == 'train':
+                        # compute the gradient & update parameters
+                        loss.backward()
+                        optimizer.step()
 
-                if phase == 'train':
-                    lossTrainList.append(mean_loss_epoch)
-                    print(
-                        f'Epoch: {epoch + 1}, Loss_train: {mean_loss_epoch:.4f} (± {std_loss_epoch:.4f})')
-                else:
-                    lossValList.append(mean_loss_epoch)
-                    print(
-                        f'Epoch: {epoch + 1}, Loss_val: {mean_loss_epoch:.4f} (± {std_loss_epoch:.4f})')
+            # Display loss
+            mean_loss_epoch = np.mean(epoch_loss)
+            std_loss_epoch = np.std(epoch_loss)
 
-                    if epoch_acc < best_acc:
-                        # Keep curent model with copy function
-                        best_acc = epoch_acc
+            if phase == 'train':
+                lossTrainList.append(mean_loss_epoch)
+                print(
+                    f'Epoch: {epoch + 1}, Loss_train: {mean_loss_epoch:.4f} (± {std_loss_epoch:.4f})')
+            else:
+                lossValList.append(mean_loss_epoch)
+                print(
+                    f'Epoch: {epoch + 1}, Loss_val: {mean_loss_epoch:.4f} (± {std_loss_epoch:.4f})')
+
+                if epoch_acc < best_acc:
+                    # Keep curent model with copy function
+                    best_acc = epoch_acc
 
     # Save best classification model
     torch.save(net.state_dict(), 'net.pt')
