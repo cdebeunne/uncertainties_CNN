@@ -12,6 +12,29 @@ import torchvision.transforms.functional as TF
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 import matplotlib.pyplot as plt
+from contrib import adf
+
+def keep_variance(x, min_variance):
+    return x + min_variance
+
+def one_hot_pred_from_label(y_pred, labels):
+    y_true = torch.zeros_like(y_pred)
+    ones = torch.ones_like(y_pred)
+    indexes = [l for l in labels]
+    y_true[torch.arange(labels.size(0)), indexes] = ones[torch.arange(labels.size(0)), indexes]
+    
+    return y_true
+
+class SoftmaxHeteroscedasticLoss(torch.nn.Module):    
+    def __init__(self):
+        super(SoftmaxHeteroscedasticLoss, self).__init__()
+        
+    def forward(self, outputs, variances, labels, eps=1e-4): 
+        mean = outputs
+        var = variances
+        targets = one_hot_pred_from_label(outputs, labels)
+        precision = 1/(var + eps)
+        return torch.mean(0.5*precision * (targets-mean)**2 + 0.5*torch.log(var+eps))
 
 
 def trainNet(net, trainLoader, evalLoader, ADF=False):
@@ -23,7 +46,10 @@ def trainNet(net, trainLoader, evalLoader, ADF=False):
 
     # Model architecture, Loss function & Optimizer
     net.to(device)
-    criterion = nn.CrossEntropyLoss()
+    if ADF:
+        criterion = SoftmaxHeteroscedasticLoss()
+    else:
+        criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(net.parameters(), lr=1e-3)
 
     lossTrainList = []
@@ -60,8 +86,8 @@ def trainNet(net, trainLoader, evalLoader, ADF=False):
                 with torch.set_grad_enabled(phase == 'train'):
                     # Apply the model & compute the loss
                     if ADF:
-                        preds,_ = net(imgs)
-                        loss = criterion(preds, labels)
+                        preds, predsVar = net(imgs)
+                        loss = criterion(preds, predsVar, labels)
                     else:
                         preds = net(imgs)
                         loss = criterion(preds, labels)
