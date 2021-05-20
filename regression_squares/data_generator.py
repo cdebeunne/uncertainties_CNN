@@ -8,6 +8,12 @@ def rotateImage(img, angle, pivot):
     a function that rotate an image with the pivot point as the
     center of rotation
     """
+    if pivot[0]<0 or pivot[0]>255:
+        print(img.shape)
+        return img
+    if pivot[1]<0 or pivot[1]>255:
+        print(img.shape)
+        return img
     padY = [img.shape[1] - pivot[0], pivot[0]]
     padX = [img.shape[0] - pivot[1], pivot[1]]
     imgP = np.pad(img, [padY, padX], 'constant')
@@ -18,6 +24,10 @@ def generate_square(N, square_size, x0, y0, angle):
     """
     generate an image with a parametrized square
     """
+    # we need integers values
+    x0 = int(round(x0))
+    y0 = int(round(y0))
+    
     im = np.zeros((N,N))
     x1 = x0+square_size
     y1 = y0+square_size
@@ -26,7 +36,8 @@ def generate_square(N, square_size, x0, y0, angle):
     yv = np.arange(y0,y1)
     for x in xv:
         for y in yv:
-            im[x,y] = 1
+            if (x<256) and (y<256):
+                im[x,y] = 1
     
     im = rotateImage(im, angle, [x0,y0])
     return im
@@ -68,13 +79,17 @@ def show_results(im1, im0, x0, y0, delta_x, delta_y, delta_angle):
 def generate_dataset(N, square_size):
     X = []
     Y = []
-    for i in range(1000):
-        x0 = np.random.random_integers(N-square_size)
-        y0 = np.random.random_integers(N-square_size)
-        x1 = np.random.random_integers(N-square_size)
-        y1 =  np.random.random_integers(N-square_size)
+    for i in range(1500):
+        x0 = np.random.random_integers(square_size, N-square_size)
+        y0 = np.random.random_integers(square_size, N-square_size)
+        # x1 = np.random.random_integers(square_size, N-square_size)
+        # y1 =  np.random.random_integers(square_size, N-square_size)
+        x1 = np.random.random_integers(-10,10) + x0
+        y1 = np.random.random_integers(-10,10) + y0
+
         angle0 = np.random.random_integers(90)
-        angle1 = np.random.random_integers(90)
+        # angle1 = np.random.random_integers(90)
+        angle1 = np.random.random_integers(-10,10) + angle0
 
         im0 = generate_square(N, square_size, x0, y0, angle0)
         im1 = generate_square(N, square_size, x1, y1, angle1)
@@ -87,6 +102,7 @@ def generate_dataset(N, square_size):
             'im1':im1,
             'x0':x0,
             'y0':y0,
+            'angle0':angle0
         })
         X.append(x)
         Y.append([delta_x, delta_y, delta_angle])
@@ -100,7 +116,7 @@ if __name__ == '__main__':
     data = np.load('square_dataset.npz', allow_pickle=True)
     X = data['X']
     Y = data['Y']
-    i = 20
+    i = 30
     im0 = X[i]['im0']
     im1 = X[i]['im1']
     x0 = X[i]['x0']
