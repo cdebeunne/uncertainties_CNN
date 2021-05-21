@@ -1,4 +1,5 @@
 import torch
+import matplotlib.pyplot as plt
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
@@ -78,20 +79,21 @@ class SquareNet(nn.Module):
         output_images = torch.zeros(input_images.shape)
         N = 256
         square_size = 50
-        output_images[:][0][:][:] = input_images[:][0][:][:]
         index = 0
         # We need to define a new input transformation
         # and to render new images
         if isinstance(obs['x0'], np.int64):
-            delta_x, delta_y, delta_angle = transfo_output[0].detach().numpy()
+            output_images[0][1][:][:] = input_images[0][1][:][:]
+            delta_x, delta_y, delta_angle = transfo_output[index].detach().numpy()
             new_x = obs['x0'] + delta_x 
             new_y = obs['y0'] + delta_y 
             new_angle = obs['angle0'] + delta_angle 
             new_im = generate_square(N, square_size, new_x, new_y, new_angle)
             new_im = torch.from_numpy(new_im).float()
-            output_images[index][1][:][:] = new_im
-
+            output_images[index][0][:][:] = new_im
+            
         else:
+            output_images[:][1][:][:] = input_images[:][1][:][:]
             for transformation in transfo_output:
                 delta_x, delta_y, delta_angle = transformation[:].detach().numpy()
                 new_x = obs['x0'][index].numpy() + delta_x 
@@ -99,7 +101,7 @@ class SquareNet(nn.Module):
                 new_angle = obs['angle0'][index].numpy() + delta_angle 
                 new_im = generate_square(N, square_size, new_x, new_y, new_angle)
                 new_im = torch.from_numpy(new_im).float()
-                output_images[index][1][:][:] = new_im
+                output_images[index][0][:][:] = new_im
                 index += 1
         return output_images
 

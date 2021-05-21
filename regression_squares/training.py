@@ -10,6 +10,7 @@ import torchvision.transforms.functional as TF
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 import matplotlib.pyplot as plt
+from data_generator import show_results
 from utils import ImageDataset, SquareNet
 
 def square_regression_loss(outputs, groundtruth, n_iterations=1):
@@ -92,6 +93,13 @@ def trainNet(net, trainLoader, evalLoader):
 
                 obs = data[2]
                 groundtruth = obs["transformation"].to(device)
+
+                # debug
+                # print(im0.shape)
+                # x0 = obs['x0'][1].numpy()
+                # y0 = obs['y0'][1].numpy()
+                # delta_x, delta_y, delta_angle = groundtruth[1,:].numpy()
+                # show_results(im1.numpy()[1,0,:,:], im0.numpy()[1,0,:,:], x0, y0, delta_x, delta_y, delta_angle)
 
                 # Set the gradient to zero
                 optimizer.zero_grad()

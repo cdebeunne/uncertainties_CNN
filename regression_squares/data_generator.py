@@ -42,7 +42,7 @@ def generate_square(N, square_size, x0, y0, angle):
     im = rotateImage(im, angle, [x0,y0])
     return im
 
-def show_results(im1, im0, x0, y0, delta_x, delta_y, delta_angle):
+def show_results(im0, im1, x0, y0, delta_x, delta_y, delta_angle):
     """
     a plotter to illustrates the results 
     """
@@ -79,13 +79,17 @@ def show_results(im1, im0, x0, y0, delta_x, delta_y, delta_angle):
 def generate_dataset(N, square_size):
     X = []
     Y = []
-    for i in range(1500):
-        x0 = np.random.random_integers(square_size, N-square_size)
-        y0 = np.random.random_integers(square_size, N-square_size)
+    for i in range(1000):
+        pad = round(np.sqrt(2)*square_size)
+        x0 = np.random.random_integers(pad, N-pad)
+        y0 = np.random.random_integers(pad, N-pad)
         # x1 = np.random.random_integers(square_size, N-square_size)
         # y1 =  np.random.random_integers(square_size, N-square_size)
         x1 = np.random.random_integers(-10,10) + x0
         y1 = np.random.random_integers(-10,10) + y0
+        while (x1 > N-pad) or (y1 > N-pad) or (x1<pad) or (y1<pad):
+            x1 = np.random.random_integers(-10,10) + x0
+            y1 = np.random.random_integers(-10,10) + y0
 
         angle0 = np.random.random_integers(90)
         # angle1 = np.random.random_integers(90)
@@ -112,7 +116,7 @@ def generate_dataset(N, square_size):
 if __name__ == '__main__':
     N = 256
     square_size = 50
-    generate_dataset(N, square_size)
+    #generate_dataset(N, square_size)
     data = np.load('square_dataset.npz', allow_pickle=True)
     X = data['X']
     Y = data['Y']
@@ -122,6 +126,7 @@ if __name__ == '__main__':
     x0 = X[i]['x0']
     y0 = X[i]['y0']
     delta_x, delta_y, delta_angle = Y[i]
+    print(x0, y0, X[i]['angle0'])
     show_results(im1, im0, x0, y0, delta_x, delta_y, delta_angle)
     
     
