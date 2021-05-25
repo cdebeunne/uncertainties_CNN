@@ -56,17 +56,17 @@ class SquareNet(nn.Module):
         self.conv   = conv(2,   16, kernel_size=5, stride=2)
         # batch normalization
         self.bn = nn.BatchNorm2d(16)
+        # dropout
+        self.dropout = nn.Dropout(0.5)
         # an affine operation: y = Wx + b
         self.fc1 = nn.Linear(262144, 256)
         self.fc2 = nn.Linear(256, 3) 
-        self.fc = nn.Linear(262144,3)
+        self.fc = nn.Linear(131072,3)
 
     def net_forward(self, input):
-        x = self.conv(input)
-        x = self.bn(x)
+        x = input
         x = torch.reshape(x, (x.shape[0],-1))
-        # x = self.fc1(x)
-        # x = self.fc2(x)
+        x = self.dropout(x)
         x = self.fc(x)
 
         return x
@@ -85,6 +85,8 @@ class SquareNet(nn.Module):
         if isinstance(obs['x0'], np.int64):
             output_images[0][1][:][:] = input_images[0][1][:][:]
             delta_x, delta_y, delta_angle = transfo_output[index].detach().numpy()
+            # show_results(input_images[index][0][:][:], input_images[index][1][:][:], obs['x0'],
+            #  obs['y0'], delta_x, delta_y, delta_angle)
             new_x = obs['x0'] + delta_x 
             new_y = obs['y0'] + delta_y 
             new_angle = obs['angle0'] + delta_angle 
@@ -93,9 +95,11 @@ class SquareNet(nn.Module):
             output_images[index][0][:][:] = new_im
             
         else:
-            output_images[:][1][:][:] = input_images[:][1][:][:]
             for transformation in transfo_output:
-                delta_x, delta_y, delta_angle = transformation[:].detach().numpy()
+                output_images[index][1][:][:] = input_images[index][1][:][:]
+                delta_x, delta_y, delta_angle = transformation.detach().numpy()
+                # show_results(input_images[index][0][:][:], input_images[index][1][:][:], obs['x0'][index].numpy(),
+                #  obs['y0'][index].numpy(), delta_x, delta_y, delta_angle)
                 new_x = obs['x0'][index].numpy() + delta_x 
                 new_y = obs['y0'][index].numpy() + delta_y
                 new_angle = obs['angle0'][index].numpy() + delta_angle 
@@ -122,7 +126,7 @@ class SquareNet(nn.Module):
                 'model_output': model_output,
             }
             
-            input_images = self.render(input_images, obs, transfo_output)
+            input_images = self.render(input_images, obs, model_output)
             transfo_input = transfo_output
 
         return outputs
@@ -142,7 +146,7 @@ if __name__ == '__main__':
     x0 = dataset[i][2]['x0']
     y0 = dataset[i][2]['y0']
     delta_x, delta_y, delta_angle = dataset[i][2]['transformation']
-    #show_results(im1.numpy()[0,:,:], im0.numpy()[0,:,:], x0, y0, delta_x, delta_y, delta_angle)
+    show_results(im0.numpy()[0,:,:], im1.numpy()[0,:,:], x0, y0, delta_x, delta_y, delta_angle)
 
     model = SquareNet()
     input_net = torch.cat((im0,im1),0).unsqueeze(0)

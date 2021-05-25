@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from scipy import ndimage
 import imutils
 import matplotlib.pyplot as plt
@@ -79,21 +80,23 @@ def show_results(im0, im1, x0, y0, delta_x, delta_y, delta_angle):
 def generate_dataset(N, square_size):
     X = []
     Y = []
-    for i in range(1000):
+    for i in range(1500):
         pad = round(np.sqrt(2)*square_size)
         x0 = np.random.random_integers(pad, N-pad)
         y0 = np.random.random_integers(pad, N-pad)
         # x1 = np.random.random_integers(square_size, N-square_size)
         # y1 =  np.random.random_integers(square_size, N-square_size)
-        x1 = np.random.random_integers(-10,10) + x0
-        y1 = np.random.random_integers(-10,10) + y0
+        delta_pix = 10
+        delta_theta = 10
+        x1 = np.random.random_integers(-delta_pix,delta_pix) + x0
+        y1 = np.random.random_integers(-delta_pix,delta_pix) + y0
         while (x1 > N-pad) or (y1 > N-pad) or (x1<pad) or (y1<pad):
-            x1 = np.random.random_integers(-10,10) + x0
-            y1 = np.random.random_integers(-10,10) + y0
+            x1 = np.random.random_integers(-delta_pix,delta_pix) + x0
+            y1 = np.random.random_integers(-delta_pix,delta_pix) + y0
 
         angle0 = np.random.random_integers(90)
         # angle1 = np.random.random_integers(90)
-        angle1 = np.random.random_integers(-10,10) + angle0
+        angle1 = np.random.random_integers(-delta_theta,delta_theta) + angle0
 
         im0 = generate_square(N, square_size, x0, y0, angle0)
         im1 = generate_square(N, square_size, x1, y1, angle1)
@@ -111,12 +114,17 @@ def generate_dataset(N, square_size):
         X.append(x)
         Y.append([delta_x, delta_y, delta_angle])
     np.savez('square_dataset.npz', X=X, Y=Y, protocol=2)
+    # df = pd.DataFrame({
+    #     'X':X,
+    #     'Y':Y,
+    # })
+    # df.to_pickle('square_dataset.pkl')
 
 
 if __name__ == '__main__':
     N = 256
     square_size = 50
-    #generate_dataset(N, square_size)
+    generate_dataset(N, square_size)
     data = np.load('square_dataset.npz', allow_pickle=True)
     X = data['X']
     Y = data['Y']
@@ -127,6 +135,6 @@ if __name__ == '__main__':
     y0 = X[i]['y0']
     delta_x, delta_y, delta_angle = Y[i]
     print(x0, y0, X[i]['angle0'])
-    show_results(im1, im0, x0, y0, delta_x, delta_y, delta_angle)
+    show_results(im0, im1, x0, y0, delta_x, delta_y, delta_angle)
     
     

@@ -94,13 +94,6 @@ def trainNet(net, trainLoader, evalLoader):
                 obs = data[2]
                 groundtruth = obs["transformation"].to(device)
 
-                # debug
-                # print(im0.shape)
-                # x0 = obs['x0'][1].numpy()
-                # y0 = obs['y0'][1].numpy()
-                # delta_x, delta_y, delta_angle = groundtruth[1,:].numpy()
-                # show_results(im1.numpy()[1,0,:,:], im0.numpy()[1,0,:,:], x0, y0, delta_x, delta_y, delta_angle)
-
                 # Set the gradient to zero
                 optimizer.zero_grad()
 
@@ -148,12 +141,13 @@ if __name__ == "__main__":
     Y = data['Y']
 
     # Split the dataset in train, val and test data (with sklearn.model_selection.train_test_split function)
-    X_train, X_test, Y_train, Y_test = train_test_split(X,Y, test_size=0.2)
+    X_train, X_test, Y_train, Y_test = train_test_split(X,Y, test_size=0.1)
     trainDataSet = ImageDataset(X_train,Y_train)
     testDataSet = ImageDataset(X_test,Y_test,train=False)
     trainLoader = DataLoader(trainDataSet,batch_size=128,shuffle=True)
     evalLoader = DataLoader(testDataSet,batch_size=128,shuffle=True)
 
     net = SquareNet()
+    # net.load_state_dict(torch.load('net.pt'))
     trainNet(net, trainLoader, evalLoader)
     
