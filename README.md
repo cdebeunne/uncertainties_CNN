@@ -1,6 +1,11 @@
 # Uncertainties Neural Networks
 
-A notebook that implements a simple CNN classifier to test uncertainties estimation of Neural Network.
+A notebook that implements a few toy neural networks in order to test uncertainties estimation.
+
+- A 1D regression with the CO2 dataset
+- An image classifier for MNIST's data
+- A custom pose estimator for 2D squares, inpired by Yann Labbe's 6D object tracker cosypose https://github.com/ylabbe/cosypose 
+
 Two methods are explored in the associated notebook:
 
 - Monte Carlo Dropout : method theorized and explained in https://arxiv.org/pdf/1506.02142.pdf (Gal 2016)
