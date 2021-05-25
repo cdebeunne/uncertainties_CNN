@@ -10,19 +10,58 @@ import torchvision.transforms.functional as TF
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 import matplotlib.pyplot as plt
+from data_generator import show_results
 from utils import ImageDataset, SquareNet
 
+def square_regression_loss(outputs, groundtruth, n_iterations=1):
+    criterion = nn.MSELoss()
+    losses_iter = []
+    for i in range (n_iterations):
+        result = outputs[f'iteration={i+1}']['transfo_output']
+        losses_iter.append(criterion(result, groundtruth))
+    loss = sum(losses_iter)
+    return loss
+
+def compute_corners(x0, y0, angle0, n_square=50):
+    p0 = torch.stack((x0, y0))
+    p1 = torch.stack(((x0 + n_square*torch.cos(angle0)), (y0 + n_square*torch.sin(angle0))))
+    p3 = torch.stack(((x0 + n_square*torch.sin(angle0)), (y0 + n_square*torch.cos(angle0))))
+    p2 = torch.stack(((p3[0] + n_square*torch.cos(angle0)), (p3[1] + n_square*torch.sin(angle0))))
+    return p0, p1, p2, p3
+
+def new_loss(outputs, groundtruth, obs, n_iterations=1):
+    criterion = nn.MSELoss()
+    losses_iter = []
+    for i in range (n_iterations):
+        x0 = obs['x0'] + groundtruth[:,0]
+        y0 = obs['y0'] + groundtruth[:,1]
+        angle0 = obs['angle0'] + groundtruth[:,2]
+        p0_gt, p1_gt, p2_gt, p3_gt = compute_corners(x0, y0, angle0)
+        result = outputs[f'iteration={i+1}']['transfo_output']
+        x1 = obs['x0'] + result[:,0]
+        y1 = obs['y0'] + result[:,1]
+        angle1 = obs['angle0'] + result[:,2]
+        p0_pred, p1_pred, p2_pred, p3_pred = compute_corners(x1, y1, angle1)
+        res = (criterion(p0_gt, p0_pred)
+            + criterion(p1_gt, p1_pred) 
+            + criterion(p2_gt, p2_pred) 
+            + criterion(p3_gt, p3_pred))/4
+        losses_iter.append(res)
+        
+    loss = sum(losses_iter)
+    return loss
+ 
 def trainNet(net, trainLoader, evalLoader):
     """
     input : a network as nn.modulen, a train data loader and an evaluation dataloader
     train a given network and save the model as net.pt
     """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    torch.autograd.set_detect_anomaly(True)
 
     # Model architecture, Loss function & Optimizer
     net.to(device)
-    criterion = nn.MSELoss()
-    optimizer = optim.Adam(net.parameters(), lr=1e-3)
+    optimizer = optim.Adam(net.parameters(), lr=5e-4)
 
     lossTrainList = []
     lossValList = []
@@ -60,8 +99,9 @@ def trainNet(net, trainLoader, evalLoader):
 
                 # compute or not the gradient
                 with torch.set_grad_enabled(phase == 'train'):
-                    preds = net(input_net)
-                    loss = criterion(preds, groundtruth.float())
+                    preds = net(input_net, obs, n_iterations=2)
+                    loss = square_regression_loss(preds, groundtruth.float(), n_iterations=2)
+                    # loss = new_loss(preds, groundtruth.float(), obs, n_iterations=1)
                     epoch_loss.append(loss.item())
 
                     if phase == 'train':
@@ -101,12 +141,13 @@ if __name__ == "__main__":
     Y = data['Y']
 
     # Split the dataset in train, val and test data (with sklearn.model_selection.train_test_split function)
-    X_train, X_test, Y_train, Y_test = train_test_split(X,Y, test_size=0.2)
+    X_train, X_test, Y_train, Y_test = train_test_split(X,Y, test_size=0.1)
     trainDataSet = ImageDataset(X_train,Y_train)
     testDataSet = ImageDataset(X_test,Y_test,train=False)
-    trainLoader = DataLoader(trainDataSet,batch_size=256,shuffle=True)
-    evalLoader = DataLoader(testDataSet,batch_size=64,shuffle=True)
+    trainLoader = DataLoader(trainDataSet,batch_size=128,shuffle=True)
+    evalLoader = DataLoader(testDataSet,batch_size=128,shuffle=True)
 
     net = SquareNet()
+    # net.load_state_dict(torch.load('net.pt'))
     trainNet(net, trainLoader, evalLoader)
     

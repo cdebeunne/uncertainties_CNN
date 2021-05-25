@@ -4,3 +4,4 @@ __pycache__/
 
 net.pt
 training.pt
+square_dataset.npz
